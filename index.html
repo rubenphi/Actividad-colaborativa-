@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartografía de la Educación para la Diversidad - Estilo Cuaderno de Bocetos</title>
+
+  <!-- Fuentes estilo caligrafía y lápiz -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
+      /* Fondo crema cálido estilo papel de dibujo con textura de puntos suaves */
+      background-color: #fbf9f4;
+      background-image: radial-gradient(#e4ded4 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+      color: #2d3748;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ENCABEZADO CON CONTROLES DISCRETOS DE TAMAÑO */
+    .header {
+      padding: 16px 24px;
+      background: #fdfcf9;
+      border-bottom: 2px dashed #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-text {
+      text-align: left;
+    }
+
+    .header h1 {
+      font-family: 'Caveat', cursive;
+      margin: 0;
+      font-size: 2.2rem;
+      color: #1e293b;
+      line-height: 1.1;
+    }
+
+    .header p {
+      margin: 4px 0 0 0;
+      font-size: 1.1rem;
+      color: #475569;
+    }
+
+    .header .highlight {
+      background: #fef08a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #1f2937;
+      border-bottom: 1.5px solid #eab308;
+    }
+
+    /* BOTONES DE TAMAÑO ESTILO LÁPIZ */
+    .zoom-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .zoom-btn {
+      background: #fff;
+      border: 1.5px solid #475569;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1rem;
+      color: #334155;
+      cursor: pointer;
+      box-shadow: 2px 2px 0px #cbd5e1;
+      transition: all 0.15s;
+    }
+
+    .zoom-btn:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+      box-shadow: 2px 3px 0px #94a3b8;
+    }
+
+    .zoom-btn:active {
+      transform: translateY(1px);
+      box-shadow: 1px 1px 0px #94a3b8;
+    }
+
+    /* CONTENEDOR AMPLIO QUE OCUPA EL 96% DE LA PANTALLA (SIN BARRAS DESPERDICIADAS) */
+    #graph-wrapper {
+      flex: 1;
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 25px 20px 40px 20px;
+    }
+
+    #mermaid-target {
+      /* Ocupa el 96% del ancho de la pantalla para aprovechar todo el espacio */
+      width: 120vw;
+      max-width: 2000px;
+      display: flex;
+      justify-content: center;
+      transition: width 0.2s ease, transform 0.2s ease;
+    }
+
+    #mermaid-target svg {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    /* NODOS FIRMES: TRAZOS DE LÁPIZ, SIN MOVERSE NI BAILAR */
+    .node {
+      cursor: pointer;
+    }
+
+    .node rect,
+    .node polygon,
+    .node circle,
+    .node path {
+      stroke-width: 2.2px !important;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(2px 3px 0px rgba(0, 0, 0, 0.08));
+      transition: filter 0.15s ease, stroke 0.15s ease;
+    }
+
+    .node:hover rect,
+    .node:hover polygon,
+    .node:hover circle,
+    .node:hover path {
+      stroke: #0f172a !important;
+      stroke-width: 3px !important;
+      filter: drop-shadow(3px 4px 0px rgba(0, 0, 0, 0.18));
+    }
+
+    /* MODAL ESTILO TARJETA DE APUNTES */
+    #image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(44, 53, 64, 0.65);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: #fffefb;
+      border: 2px solid #2d3748;
+      border-radius: 16px;
+      max-width: 650px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 6px 6px 0px #cbd5e1, 0 15px 30px rgba(0, 0, 0, 0.15);
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      background: #f1f5f9;
+      border: 1.5px solid #64748b;
+      font-size: 1.4rem;
+      color: #334155;
+      cursor: pointer;
+      line-height: 1;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #dc2626;
+      transform: scale(1.05);
+    }
+
+    .modal-title {
+      font-family: 'Caveat', cursive;
+      margin-top: 0;
+      margin-bottom: 14px;
+      color: #1e293b;
+      font-size: 1.8rem;
+      border-bottom: 2px dashed #e2e8f0;
+      padding-bottom: 8px;
+      padding-right: 36px;
+    }
+
+    /* CONTENEDOR DE LA ILUSTRACIÓN */
+    .image-container {
+      background: #faf8f2;
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .image-container svg {
+      max-width: 100%;
+      height: auto;
+      max-height: 270px;
+    }
+
+    /* NOTA ADHESIVA EXPLICATIVA */
+    .modal-desc {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      color: #334155;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      background: #fefce8;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border-left: 5px solid #eab308;
+      border-right: 1px solid #fef08a;
+      border-top: 1px solid #fef08a;
+      border-bottom: 1px solid #fef08a;
+      margin-bottom: 14px;
+      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.04);
+    }
+
+    .modal-author {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.05rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .modal-link {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1.5px solid #0284c7;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      box-shadow: 2px 2px 0px #bae6fd;
+    }
+
+    .modal-link:hover {
+      background: #0284c7;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1.5px solid #94a3b8;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: 'Patrick Hand', cursive;
+      transition: background 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ENCABEZADO -->
+  <div class="header">
+    <div class="header-text">
+      <h1>Cartografía de la Educación para la Diversidad</h1>
+      <p>✎ Haz <span class="highlight">clic en cualquier concepto</span> para abrir la ilustración y explicación.</p>
+    </div>
+
+    <!-- CONTROLES RÁPIDOS DE ANCHO DE PANTALLA -->
+    <div class="zoom-toolbar">
+      <button class="zoom-btn" onclick="adjustScale(1.15)" title="Agrandar">🔍 + Agrandar</button>
+      <button class="zoom-btn" onclick="adjustScale(0.85)" title="Reducir">🔍 - Reducir</button>
+      <button class="zoom-btn" onclick="resetScale()" title="Restablecer tamaño normal">⛶ Ajustar Ancho</button>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR AMPLIO DEL MAPA -->
+  <div id="graph-wrapper">
+    <div id="mermaid-target"></div>
+  </div>
+
+  <!-- MODAL CON LA ILUSTRACIÓN REFERENTE -->
+  <div id="image-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" onclick="closeImageModal()">&times;</button>
+      <h3 class="modal-title" id="m-title">Concepto</h3>
+
+      <div class="image-container" id="m-image-container"></div>
+
+      <div class="modal-desc" id="m-desc"></div>
+      <div class="modal-author" id="m-author"></div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeImageModal()">Cerrar</button>
+        <a id="m-link" href="#" target="_blank" rel="noopener noreferrer" class="modal-link">Lectura de apoyo &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ILUSTRACIONES A LÁPIZ Y COLORES CLAROS / PASTELES
+    const conceptsData = {
+      ROOT: {
+        title: "Cartografía de la Educación para la Diversidad (Unidad 1)",
+        desc: "Marco articulador que concibe la inclusión no como técnica aislada, sino como imperativo ético y proyecto sociopolítico continuo para derribar las barreras de exclusión.",
+        author: "Marco General · Unidad 1 (UNESCO / Booth & Ainscow)",
+        url: "https://unesdoc.unesco.org/ark:/48223/pf0000373718",
+        image: `<svg viewBox="0 0 500 230" width="100%">
+          <rect x="15" y="15" width="470" height="200" rx="14" fill="#fffefb" stroke="#374151" stroke-width="2" stroke-dasharray="3,3"/>
+          <text x="250" y="48" fill="#1f2937" font-size="16" font-family="'Caveat', cursive" font-weight="bold" text-anchor="middle">PARADIGMA DE LA INCLUSIÓN EDUCATIVA</text>
+          
+          <circle cx="120" cy="130" r="48" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+          <text x="120" y="125" fill="#0c4a6e" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Singularidad</text>
+          <text x="120" y="142" fill="#0369a1" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Ética Arendt</text>
+          
+          <circle cx="250" cy="130" r="48" fill="#ddd6fe" stroke="#7c3aed" stroke-width="2"/>
+          <text x="250" y="125" fill="#4c1d95" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Inclusión</text>
+          <text x="250" y="142" fill="#6d28d9" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Proceso Dialéctico</text>
+          
+          <circle cx="380" cy="130" r="48" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+          <text x="380" y="125" fill="#064e3b" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Enfoque DUA</text>
+          <text x="380" y="142" fill="#047857" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Flexibilización</text>
+          
+          <path d="M170 130 L198 130 M302 130 L330 130" stroke="#4b5563" stroke-width="2.5" stroke-dasharray="4"/>
+        </svg>`
+      },
+
+      C1: {
+        title: "1. Diversidad y Singularidad Humana",
+        desc: "Reconoce la unicidad irrepetible de cada persona (Hannah Arendt). La diversidad es la condición ontológica de lo humano; por ende, se opone frontalmente a la homogenización y normalización.",
+        author: "Hannah Arendt & Emmanuel Lévinas",
+        url: "https://www.redalyc.org/pdf/356/35601309.pdf",
+        image: `<svg viewBox="0 0 500 230" width="100%">
+          <rect x="20" y="20" width="215" height="190" rx="12" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+          <text x="127" y="48" fill="#475569" font-size="14" font-family="'Patrick Hand', cursive" text-anchor="middle">HOMOGENIZACIÓN (MOLDE)</text>
+          <circle cx="75" cy="95" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <circle cx="127" cy="95" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <circle cx="180" cy="95" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <circle cx="75" cy="145" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <circle cx="127" cy="145" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <circle cx="180" cy="145" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+          <text x="127" y="190" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Normalización forzada</text>
+
+          <rect x="265" y="20" width="215" height="190" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="372" y="48" fill="#15803d" font-size="14" font-family="'Patrick Hand', cursive" text-anchor="middle">SINGULARIDAD HUMANA</text>
+          <circle cx="315" cy="95" r="16" fill="#bae6fd" stroke="#0284c7" stroke-width="1.5"/>
+          <polygon points="372,75 390,110 354,110" fill="#fef08a" stroke="#ca8a04" stroke-width="1.5"/>
+          <rect x="415" y="80" width="28" height="28" rx="6" fill="#fed7aa" stroke="#ea580c" stroke-width="1.5"/>
+          <circle cx="340" cy="150" r="13" fill="#fbcfe8" stroke="#db2777" stroke-width="1.5"/>
+          <rect x="390" y="137" width="26" height="26" rx="13" fill="#ddd6fe" stroke="#9333ea" stroke-width="1.5"/>
+          <text x="372" y="190" fill="#15803d" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Pluralidad: Cada ser es único</text>
+        </svg>`
+      },
+
+      C2: {
+        title: "2. Educación Inclusiva",
+        desc: "Búsqueda incesante, procesual y dialéctica de transformación de las escuelas para garantizar el derecho humano inalienable a una educación digna y de calidad (Gerardo Echeita, Roger Slee).",
+        author: "Gerardo Echeita & Roger Slee",
+        url: "https://dialnet.unirioja.es/descarga/articulo/2744318.pdf",
+        image: `<svg viewBox="0 0 500 220" width="100%">
+          <circle cx="70" cy="95" r="42" fill="#fff" stroke="#64748b" stroke-width="2"/>
+          <text x="70" y="165" fill="#475569" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Exclusión</text>
+          <circle cx="125" cy="65" r="6" fill="#fca5a5" stroke="#ef4444"/>
+          <circle cx="130" cy="85" r="6" fill="#fca5a5" stroke="#ef4444"/>
+
+          <circle cx="185" cy="95" r="42" fill="#fff" stroke="#64748b" stroke-width="2"/>
+          <circle cx="185" cy="95" r="20" fill="#ffe4e6" stroke="#f43f5e" stroke-width="1.5"/>
+          <text x="185" y="165" fill="#be123c" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Segregación</text>
+
+          <circle cx="300" cy="95" r="42" fill="#fff" stroke="#64748b" stroke-width="2"/>
+          <circle cx="315" cy="95" r="17" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="300" y="165" fill="#b45309" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Integración</text>
+
+          <circle cx="420" cy="95" r="46" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5"/>
+          <circle cx="405" cy="85" r="6" fill="#38bdf8" stroke="#0369a1"/>
+          <circle cx="435" cy="85" r="6" fill="#fbbf24" stroke="#d97706"/>
+          <circle cx="420" cy="110" r="6" fill="#34d399" stroke="#059669"/>
+          <circle cx="435" cy="115" r="6" fill="#f472b6" stroke="#db2777"/>
+          <text x="420" y="165" fill="#0369a1" font-size="13" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">INCLUSIÓN</text>
+          <text x="250" y="202" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Evolución de los modelos escolares</text>
+        </svg>`
+      },
+
+      C3: {
+        title: "3. Equidad y Justicia Curricular",
+        desc: "Garantía de que las decisiones didácticas, los contenidos y las formas evaluativas atiendan las necesidades y voces de colectivos históricamente marginados (Jurjo Torres Santomé).",
+        author: "Jurjo Torres Santomé",
+        url: "https://redined.educacion.gob.es/xmlui/handle/11162/48628",
+        image: `<svg viewBox="0 0 500 220" width="100%">
+          <rect x="20" y="20" width="140" height="175" rx="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+          <text x="90" y="48" fill="#475569" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">IGUALDAD</text>
+          <rect x="40" y="130" width="28" height="28" fill="#e2e8f0" stroke="#64748b"/>
+          <rect x="75" y="130" width="28" height="28" fill="#e2e8f0" stroke="#64748b"/>
+          <rect x="110" y="130" width="28" height="28" fill="#e2e8f0" stroke="#64748b"/>
+          <text x="90" y="180" fill="#64748b" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Mismo recurso</text>
+
+          <rect x="180" y="20" width="140" height="175" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5"/>
+          <text x="250" y="48" fill="#0369a1" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">EQUIDAD</text>
+          <rect x="200" y="140" width="24" height="18" fill="#bae6fd" stroke="#0284c7"/>
+          <rect x="235" y="125" width="24" height="33" fill="#bae6fd" stroke="#0284c7"/>
+          <rect x="270" y="105" width="24" height="53" fill="#bae6fd" stroke="#0284c7"/>
+          <text x="250" y="180" fill="#0369a1" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Según necesidad</text>
+
+          <rect x="340" y="20" width="140" height="175" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="410" y="48" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">JUSTICIA</text>
+          <circle cx="410" cy="105" r="25" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
+          <text x="410" y="105" fill="#166534" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">SIN BARRERAS</text>
+          <text x="410" y="122" fill="#166534" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Diseño Universal</text>
+          <text x="410" y="180" fill="#15803d" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Se quita la cerca</text>
+        </svg>`
+      },
+
+      C4: {
+        title: "4. Dimensiones de la Inclusión",
+        desc: "Estructura tridimensional indisociable propuesta por Booth, Ainscow y Echeita: Presencia física compartida, Participación con pertenencia activa y Aprendizaje significativo.",
+        author: "Tony Booth, Mel Ainscow & Gerardo Echeita",
+        url: "https://repositorio.uam.es/handle/10486/661330",
+        image: `<svg viewBox="0 0 500 220" width="100%">
+          <circle cx="210" cy="95" r="65" fill="#bae6fd" opacity="0.6" stroke="#0284c7" stroke-width="2"/>
+          <circle cx="290" cy="95" r="65" fill="#ddd6fe" opacity="0.6" stroke="#7c3aed" stroke-width="2"/>
+          <circle cx="250" cy="140" r="65" fill="#bbf7d0" opacity="0.6" stroke="#16a34a" stroke-width="2"/>
+          <text x="180" y="85" fill="#0369a1" font-size="14" font-family="'Patrick Hand', cursive" font-weight="bold">Presencia</text>
+          <text x="290" y="85" fill="#5b21b6" font-size="14" font-family="'Patrick Hand', cursive" font-weight="bold">Participación</text>
+          <text x="250" y="190" fill="#15803d" font-size="14" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">Aprendizaje</text>
+          <text x="250" y="115" fill="#1e293b" font-size="15" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">INCLUSIÓN</text>
+        </svg>`
+      },
+
+      C4A: {
+        title: "4a. Presencia",
+        desc: "Requisito de escolarización efectiva en aulas comunes y ordinarias de proximidad, erradicando dinámicas de segregación y el fenómeno de las 'puertas giratorias'.",
+        author: "Gerardo Echeita & Mel Ainscow",
+        url: "https://dialnet.unirioja.es/servlet/articulo?codigo=2744318",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="12" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+          <text x="225" y="65" fill="#0369a1" font-size="17" font-family="'Patrick Hand', cursive" text-anchor="middle">AULA COMÚN Y ORDINARIA</text>
+          <text x="225" y="100" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Todos los estudiantes juntos en su centro escolar de cercanía</text>
+          <text x="225" y="128" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Cero segregación en aulas aisladas</text>
+        </svg>`
+      },
+
+      C4B: {
+        title: "4b. Participación",
+        desc: "Sentido de pertenencia, reconocimiento socioafectivo y voz activa en la comunidad. 'Sin reconocimiento no hay conocimiento' (Axel Honneth, Puig Rovira).",
+        author: "Axel Honneth & Josep Maria Puig Rovira",
+        url: "https://revistas.comillas.edu/index.php/padresymaestros/article/view/1077",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="12" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+          <text x="225" y="65" fill="#5b21b6" font-size="17" font-family="'Patrick Hand', cursive" text-anchor="middle">RECONOCIMIENTO Y VOZ ACTIVA</text>
+          <text x="225" y="100" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Pertenencia emocional, bienestar e intervención directa</text>
+          <text x="225" y="128" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Nadie es un espectador pasivo en la comunidad</text>
+        </svg>`
+      },
+
+      C4C: {
+        title: "4c. Aprendizaje / Rendimiento",
+        desc: "Adquisición de saberes y competencias significativas para la vida colectiva, trascendiendo las escalas de medición tecnocráticas de exámenes estandarizados.",
+        author: "UNESCO & Carmen Alba Pastor",
+        url: "https://unesdoc.unesco.org/ark:/48223/pf0000373718",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="225" y="65" fill="#15803d" font-size="17" font-family="'Patrick Hand', cursive" text-anchor="middle">PROGRESO Y APRENDIZAJE AUTÉNTICO</text>
+          <text x="225" y="100" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Desarrollo del máximo potencial personal de cada alumno</text>
+          <text x="225" y="128" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Más allá del simple adiestramiento para exámenes</text>
+        </svg>`
+      },
+
+      C5: {
+        title: "5. Dispositivos Pedagógicos en Tensión",
+        desc: "Entramado histórico de discursos, arquitecturas y normas que disputan el sentido de la escuela: Medicalización, Mercantilización y Hospitalidad (Foucault, Larrosa).",
+        author: "Michel Foucault & Jorge Larrosa",
+        url: "https://www.scielo.br/j/cp/a/6W4GkZ7y5vQZpW38nFzLffG/",
+        image: `<svg viewBox="0 0 500 210" width="100%">
+          <rect x="20" y="25" width="140" height="155" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="1.8"/>
+          <text x="90" y="55" fill="#be123c" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Medicalización</text>
+          <text x="90" y="85" fill="#881337" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Patología clínica</text>
+          <text x="90" y="105" fill="#64748b" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Déficit en el niño</text>
+
+          <rect x="180" y="25" width="140" height="155" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="1.8"/>
+          <text x="250" y="55" fill="#6b21a8" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Mercantilización</text>
+          <text x="250" y="85" fill="#581c87" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Competitividad</text>
+          <text x="250" y="105" fill="#64748b" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Sujeto-cliente</text>
+
+          <rect x="340" y="25" width="140" height="155" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8"/>
+          <text x="410" y="55" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Hospitalidad</text>
+          <text x="410" y="85" fill="#166534" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Acogida ética</text>
+          <text x="410" y="105" fill="#64748b" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Comunidad solidaria</text>
+        </svg>`
+      },
+
+      C5A: {
+        title: "5a. Medicalización",
+        desc: "Tratamiento de las diferencias como patologías clínicas individuales que deben ser rehabilitadas o medicadas, culpando al alumno y desresponsabilizando a la escuela.",
+        author: "Michel Foucault & Gisela Untoiglich",
+        url: "https://dialnet.unirioja.es/servlet/articulo?codigo=5115206",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="2"/>
+          <text x="225" y="60" fill="#be123c" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">PATOLOGIZACIÓN ESCOLAR</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">El problema se ubica en el «déficit clínico» del estudiante</text>
+          <text x="225" y="125" fill="#64748b" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Etiquetas que eximen a la institución de flexibilizar su enseñanza</text>
+        </svg>`
+      },
+
+      C5B: {
+        title: "5b. Mercantilización",
+        desc: "Imposición de criterios gerencialistas, competitividad neoliberal y estandarización, concibiendo al estudiante como cliente o insumo estadístico de capital humano.",
+        author: "Jurjo Torres Santomé & Christian Laval",
+        url: "https://dialnet.unirioja.es/servlet/articulo?codigo=6484394",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="2"/>
+          <text x="225" y="60" fill="#6b21a8" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">ESCUELA MERCANTILIZADA</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Competitividad de mercado y ranking de rendimiento</text>
+          <text x="225" y="125" fill="#64748b" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Choca frontalmente con la justicia curricular</text>
+        </svg>`
+      },
+
+      C5C: {
+        title: "5c. Dispositivo de Inclusión / Hospitalidad",
+        desc: "Vector transformador que apuesta por la hospitalidad pedagógica, la cooperación solidaria y el Diseño Universal (DUA) como alternativas comunitarias.",
+        author: "Carlos Skliar & Carmen Alba Pastor",
+        url: "https://educadua.es/doc/dua/dua_pautas_2_2.pdf",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="410" height="140" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="225" y="60" fill="#15803d" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">HOSPITALIDAD PEDAGÓGICA</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Acogida incondicional de quien llega a la escuela</text>
+          <text x="225" y="125" fill="#64748b" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Práctica comunitaria que desafía la homogenización</text>
+        </svg>`
+      },
+
+      C6: {
+        title: "6. Visión Sistémica del Centro Escolar",
+        desc: "Marco de intervención integral (Index for Inclusion, Booth & Ainscow) que articula Culturas (valores), Políticas (planes) y Prácticas (didácticas de aula).",
+        author: "Tony Booth & Mel Ainscow",
+        url: "https://www.eenet.org.uk/resources/docs/Index%20Spanish%20South%20America%20.pdf",
+        image: `<svg viewBox="0 0 500 220" width="100%">
+          <polygon points="250,20 100,175 400,175" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+          <circle cx="250" cy="20" r="15" fill="#bbf7d0" stroke="#16a34a"/>
+          <text x="250" y="8" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">POLÍTICAS</text>
+          <circle cx="100" cy="175" r="15" fill="#bbf7d0" stroke="#16a34a"/>
+          <text x="100" y="198" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">CULTURAS</text>
+          <circle cx="400" cy="175" r="15" fill="#bbf7d0" stroke="#16a34a"/>
+          <text x="400" y="198" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">PRÁCTICAS</text>
+          <text x="250" y="115" fill="#1e293b" font-size="14" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">INDEX FOR INCLUSION</text>
+        </svg>`
+      },
+
+      C6A: {
+        title: "Culturas Escolares",
+        desc: "Atmósfera axiológica, creencias y valores inclusivos compartidos por la comunidad educativa que guían las actitudes cotidianas de convivencia.",
+        author: "Tony Booth & Mel Ainscow",
+        url: "https://www.eenet.org.uk/resources/docs/Index%20Spanish%20South%20America%20.pdf",
+        image: `<svg viewBox="0 0 450 160" width="100%">
+          <rect x="20" y="20" width="410" height="120" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="225" y="60" fill="#15803d" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">CULTURAS ESCOLARES INCLUSIVAS</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Construcción de comunidad y valores de solidaridad mutua</text>
+        </svg>`
+      },
+
+      C6B: {
+        title: "Políticas Escolares",
+        desc: "Normativas, manuales, reglamentos y planes de gestión de apoyos que estructuran formalmente las oportunidades del centro para derribar barreras.",
+        author: "Tony Booth & Mel Ainscow",
+        url: "https://www.eenet.org.uk/resources/docs/Index%20Spanish%20South%20America%20.pdf",
+        image: `<svg viewBox="0 0 450 160" width="100%">
+          <rect x="20" y="20" width="410" height="120" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="225" y="60" fill="#15803d" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">POLÍTICAS ESCOLARES INCLUSIVAS</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Planes formales de centro y asignación de recursos</text>
+        </svg>`
+      },
+
+      C6C: {
+        title: "Prácticas Escolares",
+        desc: "Enseñanza cotidiana, metodologías cooperativas y actividades de aprendizaje concretas dentro del aula accesible para todo el alumnado.",
+        author: "Tony Booth & Mel Ainscow",
+        url: "https://www.eenet.org.uk/resources/docs/Index%20Spanish%20South%20America%20.pdf",
+        image: `<svg viewBox="0 0 450 160" width="100%">
+          <rect x="20" y="20" width="410" height="120" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+          <text x="225" y="60" fill="#15803d" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">PRÁCTICAS DIDÁCTICAS EN EL AULA</text>
+          <text x="225" y="95" fill="#334155" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">Aprendizaje cooperativo y Diseño Universal (DUA)</text>
+        </svg>`
+      },
+
+      C7: {
+        title: "7. Barreras para el Aprendizaje y la Participación (BAP)",
+        desc: "Desplazamiento del Déficit: El foco de intervención deja de ser la supuesta 'deficiencia' del estudiante para pasar a transformar los obstáculos del entorno.",
+        author: "Gerardo Echeita & Mel Ainscow",
+        url: "https://revistas.uam.es/tarbiya/article/view/7112",
+        image: `<svg viewBox="0 0 500 210" width="100%">
+          <rect x="15" y="25" width="110" height="150" rx="8" fill="#fff1f2" stroke="#e11d48" stroke-width="1.8"/>
+          <text x="70" y="55" fill="#be123c" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Actitudinales</text>
+          <text x="70" y="90" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Prejuicios y</text>
+          <text x="70" y="105" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">bajas expectativas</text>
+
+          <rect x="135" y="25" width="110" height="150" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.8"/>
+          <text x="190" y="55" fill="#854d0e" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Curriculares</text>
+          <text x="190" y="90" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Didáctica rígida,</text>
+          <text x="190" y="105" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">libro único</text>
+
+          <rect x="255" y="25" width="110" height="150" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.8"/>
+          <text x="310" y="55" fill="#0369a1" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Organizativas</text>
+          <text x="310" y="90" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Horarios rígidos</text>
+          <text x="310" y="105" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">y segregación</text>
+
+          <rect x="375" y="25" width="110" height="150" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8"/>
+          <text x="430" y="55" fill="#15803d" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Físicas</text>
+          <text x="430" y="90" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Barreras de</text>
+          <text x="430" y="105" fill="#334155" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">arquitectura</text>
+        </svg>`
+      },
+
+      C9: {
+        title: "9. Heterotopías y Heterocronías Escolares",
+        desc: "Espacios de contención marginados (aulas de apoyo segregadas) y bucles temporales estancados que simulan integración mientras aíslan al sujeto de la vida común.",
+        author: "Michel Foucault & Restrepo",
+        url: "https://dialnet.unirioja.es/servlet/articulo?codigo=5115206",
+        image: `<svg viewBox="0 0 450 180" width="100%">
+          <rect x="20" y="20" width="240" height="140" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="2"/>
+          <text x="140" y="80" fill="#0369a1" font-size="16" font-family="'Patrick Hand', cursive" text-anchor="middle">AULA ORDINARIA</text>
+          <text x="140" y="105" fill="#64748b" font-size="12" font-family="'Patrick Hand', cursive" text-anchor="middle">Espacio de vida compartida</text>
+
+          <rect x="290" y="30" width="140" height="120" rx="8" fill="#fff1f2" stroke="#e11d48" stroke-width="2" stroke-dasharray="4"/>
+          <text x="360" y="75" fill="#be123c" font-size="14" font-family="'Patrick Hand', cursive" text-anchor="middle">HETEROTOPÍA</text>
+          <text x="360" y="95" fill="#881337" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Aula de apoyo aislada</text>
+          <text x="360" y="115" fill="#64748b" font-size="10" font-family="'Patrick Hand', cursive" text-anchor="middle">Exclusión encubierta</text>
+        </svg>`
+      },
+
+      C10: {
+        title: "10. Mediaciones Digitales y Aprendizaje Cooperativo",
+        desc: "Implementación del Diseño Universal para el Aprendizaje - DUA (Pastor) y de estructuras cooperativas (Pere Pujolàs) para flexibilizar la enseñanza y derribar las BAP.",
+        author: "Carmen Alba Pastor (DUA) & Pere Pujolàs",
+        url: "https://educadua.es/doc/dua/dua_pautas_2_2.pdf",
+        image: `<svg viewBox="0 0 500 210" width="100%">
+          <rect x="15" y="20" width="140" height="165" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.8"/>
+          <text x="85" y="48" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">RED AFECTIVA</text>
+          <text x="85" y="75" fill="#166534" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">¿El Porqué?</text>
+          <text x="85" y="115" fill="#334155" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Múltiples formas de</text>
+          <text x="85" y="130" fill="#15803d" font-size="13" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">IMPLICACIÓN</text>
+
+          <rect x="180" y="20" width="140" height="165" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.8"/>
+          <text x="250" y="48" fill="#5b21b6" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">RECONOCIMIENTO</text>
+          <text x="250" y="75" fill="#4c1d95" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">¿El Qué?</text>
+          <text x="250" y="115" fill="#334155" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Múltiples formas de</text>
+          <text x="250" y="130" fill="#5b21b6" font-size="13" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">REPRESENTACIÓN</text>
+
+          <rect x="345" y="20" width="140" height="165" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.8"/>
+          <text x="415" y="48" fill="#0369a1" font-size="13" font-family="'Patrick Hand', cursive" text-anchor="middle">ESTRATÉGICA</text>
+          <text x="415" y="75" fill="#075985" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">¿El Cómo?</text>
+          <text x="415" y="115" fill="#334155" font-size="11" font-family="'Patrick Hand', cursive" text-anchor="middle">Múltiples formas de</text>
+          <text x="415" y="130" fill="#0369a1" font-size="13" font-family="'Patrick Hand', cursive" font-weight="bold" text-anchor="middle">ACCIÓN / EXPRESIÓN</text>
+        </svg>`
+      }
+    };
+
+    // ESTRUCTURA MERMAID
+    const graphDefinition = `flowchart TD
+      ROOT["CARTOGRAFÍA DE LA EDUCACIÓN PARA LA DIVERSIDAD<br/><i>(Unidad 1 - Marco Teórico)</i>"]
+
+      ROOT -- "se fundamenta en" --> C1["<b>1. Diversidad y Singularidad Humana</b><br/><i>Reconoce a cada sujeto como único (Arendt)</i>"]
+      C1 -- "orienta decisiones hacia" --> C3["<b>3. Equidad y Justicia Curricular</b><br/><i>Atención a colectivos sociales (Torres Santomé)</i>"]
+
+      ROOT -- "promueve proyecto de" --> C2["<b>2. Educación Inclusiva</b><br/><i>Proceso continuo de transformación (Echeita, Slee)</i>"]
+      C2 -- "se articula en" --> C4["<b>4. Dimensiones de la Inclusión</b><br/><i>(Echeita / Booth & Ainscow)</i>"]
+      C4 -- "aulas comunes para" --> C4A["<b>4a. Presencia</b><br/><i>Comunidad sin segregación</i>"]
+      C4 -- "sentido de pertenencia en" --> C4B["<b>4b. Participación</b><br/><i>Bienestar socioemocional activo</i>"]
+      C4 -- "progreso individual en" --> C4C["<b>4c. Aprendizaje</b><br/><i>Superación de pruebas estandarizadas</i>"]
+
+      C2 -- "exige eliminar" --> C7["<b>7. Barreras (BAP)</b><br/><i>Factores contextuales limitantes</i>"]
+      ROOT -- "atravesada por" --> C5["<b>5. Dispositivos en Tensión</b><br/><i>Redes discursivas y normativas (Foucault)</i>"]
+      C5 -- "patologización en" --> C5A["<b>5a. Medicalización</b><br/><i>Discapacidad como enfermedad clínica</i>"]
+      C5 -- "hipercompetencia en" --> C5B["<b>5b. Mercantilización</b><br/><i>Eficiencia y sujeto-cliente</i>"]
+      C5 -- "convivencia activa en" --> C5C["<b>5c. Dispositivo de Inclusión</b><br/><i>Encuentro y flexibilización DUA</i>"]
+      C5A -- "genera espacios paralelos en" --> C9["<b>9. Heterotopías / Heterocronías</b><br/><i>Exclusión encubierta</i>"]
+
+      C7 -- "se transforman en" --> C6["<b>6. Visión Sistémica</b><br/><i>(Booth & Ainscow)</i>"]
+      C6 -- "valores en" --> C6A["<b>Culturas Escolares</b>"]
+      C6 -- "normas en" --> C6B["<b>Políticas Escolares</b>"]
+      C6 -- "enseñanza en" --> C6C["<b>Prácticas Escolares</b>"]
+
+      ROOT -- "flexibilización con" --> C10["<b>10. Mediaciones y DUA</b><br/><i>Estrategias DUA (Pastor) y Cooperativo (Pujolàs)</i>"]
+
+      classDef default fill:#f8fafc,stroke:#475569,stroke-width:2px,color:#1e293b,rx:8px,ry:8px;
+      classDef rootNode fill:#fed7aa,stroke:#9a3412,stroke-width:2.5px,color:#7c2d12,rx:10px,ry:10px;
+      classDef ethicNode fill:#e0f2fe,stroke:#0369a1,stroke-width:2px,color:#0c4a6e,rx:8px,ry:8px;
+      classDef dimNode fill:#ede9fe,stroke:#6d28d9,stroke-width:2px,color:#4c1d95,rx:8px,ry:8px;
+      classDef tensionNode fill:#ffe4e6,stroke:#be123c,stroke-width:2px,color:#881337,rx:8px,ry:8px;
+      classDef systemNode fill:#d1fae5,stroke:#047857,stroke-width:2px,color:#064e3b,rx:8px,ry:8px;
+      classDef practiceNode fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#78350f,rx:8px,ry:8px;
+
+      class ROOT rootNode;
+      class C1,C3 ethicNode;
+      class C2,C4,C4A,C4B,C4C dimNode;
+      class C5,C5A,C5B,C5C,C9 tensionNode;
+      class C6,C6A,C6B,C6C,C7 systemNode;
+      class C10 practiceNode;
+    `;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'Patrick Hand', 'Comic Sans MS', cursive, sans-serif",
+        fontSize: '15px',
+        lineColor: '#64748b',
+        textColor: '#1e293b',
+        mainBkg: '#fef3c7',
+        nodeBorder: '#475569',
+        edgeLabelBackground: '#fdfbf7'
+      },
+      flowchart: { curve: 'basis', useMaxWidth: false, htmlLabels: true }
+    });
+
+    let currentScalePercent = 100;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Renderizar SVG en el contenedor
+      const { svg } = await mermaid.render('mermaid-svg-render', graphDefinition);
+      const container = document.getElementById('mermaid-target');
+      container.innerHTML = svg;
+
+      const renderedSvg = container.querySelector('svg');
+      if (renderedSvg) {
+        renderedSvg.removeAttribute('height');
+        renderedSvg.setAttribute('style', 'width: 100%; max-width: 100%; height: auto;');
+      }
+
+      // 2. Asociar clics sin tocar transformaciones
+      const allNodes = container.querySelectorAll('.node');
+      allNodes.forEach(node => {
+        const id = node.id || '';
+        const match = id.match(/flowchart-([A-Za-z0-9]+)-\d+/);
+        let key = match ? match[1] : null;
+
+        if (!key) {
+          for (const k of Object.keys(conceptsData)) {
+            if (id.includes('-' + k + '-') || id.endsWith('-' + k)) {
+              key = k;
+              break;
+            }
+          }
+        }
+
+        if (key && conceptsData[key]) {
+          node.style.cursor = 'pointer';
+          node.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openImageModal(key);
+          });
+        }
+      });
+    });
+
+    // CONTROLES DE ZOOM / ESCALA
+    function adjustScale(factor) {
+      currentScalePercent = Math.min(Math.max(currentScalePercent * factor, 70), 160);
+      const target = document.getElementById('mermaid-target');
+      target.style.width = `${(96 * (currentScalePercent / 100)).toFixed(1)}vw`;
+    }
+
+    function resetScale() {
+      currentScalePercent = 100;
+      const target = document.getElementById('mermaid-target');
+      target.style.width = '96vw';
+    }
+
+    // ABRIR MODAL
+    function openImageModal(key) {
+      const data = conceptsData[key];
+      if (!data) return;
+
+      document.getElementById('m-title').textContent = data.title;
+      document.getElementById('m-image-container').innerHTML = data.image;
+      document.getElementById('m-desc').textContent = data.desc;
+      document.getElementById('m-author').textContent = `✎ Referente Teórico: ${data.author}`;
+      document.getElementById('m-link').href = data.url;
+
+      document.getElementById('image-modal').style.display = 'flex';
+    }
+
+    // CERRAR MODAL
+    function closeImageModal() {
+      document.getElementById('image-modal').style.display = 'none';
+    }
+
+    document.getElementById('image-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'image-modal') closeImageModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeImageModal();
+    });
+  </script>
+</body>
+
+</html>
